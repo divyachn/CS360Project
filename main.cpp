@@ -1,21 +1,28 @@
 /*
 $ g++ -ggdb -std=c++11 -c -o shader_utils.o shader_utils.cpp
 $ g++ -ggdb -std=c++11 -c -o texture.o texture.cpp
-$ g++ -ggdb -std=c++11 main.cpp shader_utils.o texture.o -lglut -lGLEW -lGL -lGLU -lm -o game
+$ g++ -ggdb -std=c++11 main.cpp MazeGenerator.cpp shader_utils.o texture.o -lglut -lGLEW -lGL -lGLU -lm -lalut -lopenal -o game
 */
 
 #include <GL/glew.h>
 #include <GL/glut.h>
 
+// these headers are reqired for shader programing
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "shader_utils.h"
-#include "texture.hpp"
+// these headers are required for music files
+#include <AL/al.h>
+#include <AL/alc.h>
+#include <AL/alut.h>
 
 #include <iostream>
 #include <vector>
+
+#include "shader_utils.h"
+#include "texture.hpp"
+#include "MazeGenerator.h"
 
 using namespace std;
 
@@ -28,7 +35,7 @@ using glm::vec2;
 #define GAME_WON 3
 #define GAME_IN_PROGRESS 4
 
-int gameStatus=1; // by default game starts fresh
+int gameStatus=4; // by default game starts fresh
 
 GLuint program;
 
@@ -41,6 +48,7 @@ GLint uniform_m_3x3_inv_transp = -1, uniform_v_inv = -1;
 
 GLuint text;
 GLuint TextureID = 0;
+Maze m(100,100);
 
 int compile_link_shaders(char* vshader_filename, char* fshader_filename){
     GLint link_ok = GL_FALSE;
@@ -206,8 +214,67 @@ void gameWonScreen(){
   writeText(vec3(0.0, 0.0, 0.0), vec3(-70.0, -70.0, z+0.01), "Press q to quit and r to replay.");
 }
 
+// Add music while game is in progress
+int initMusic() {
+  int NUM_BUFFERS = 1;
+  int NUM_SOURCES = 1;
+	alGetError();
+
+	ALuint buffers[NUM_BUFFERS];
+	int error;
+	// Create the buffers
+	alGenBuffers(1, buffers);
+	if ((error = alGetError()) != AL_NO_ERROR) {
+	  printf("ERROR::0: alGenBuffers : %d", error);
+	  return 0;
+	}
+
+	ALenum     format;
+	ALsizei    size;
+	ALsizei    freq;
+	ALboolean  loop;
+	ALvoid*    data;
+
+	char *path = (char *)"./sounds/test.wav";
+	buffers[0] = alutCreateBufferFromFile(path);
+	if ((error = alGetError()) != AL_NO_ERROR) {
+	  printf("ERROR::1: alBufferData buffer 0 : %d\n", error);
+	  alDeleteBuffers(NUM_BUFFERS, buffers);
+	  return 0;
+	}
+
+	if((error = alutGetError())) { cout<<"File error:"<<alutGetErrorString(error)<<endl; }
+
+	ALuint source[NUM_SOURCES];
+	// Generate the sources
+	alGenSources(NUM_SOURCES, source);
+	if ((error = alGetError()) != AL_NO_ERROR) {
+	  printf("ERROR::2: alGenSources : %d", error);
+	  return 0;
+	}
+	alSourcei(source[0], AL_LOOPING, AL_TRUE);
+	alSourcei(source[0], AL_BUFFER, buffers[0]);
+	if ((error = alGetError()) != AL_NO_ERROR) {
+	  printf("ERROR::3: alSourcei : %d", error);
+	  return 0;
+	}
+
+	ALfloat listenerOri[] = { 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f };
+  alSource3f (source[0], AL_POSITION, 0,0,0);
+  alSource3f (source[0], AL_VELOCITY, 0,0,0);
+  alSource3f (source[0], AL_DIRECTION, 0,0,1);
+
+	// alListener3f(AL_POSITION,0,0,1.0);
+	alListener3f(AL_VELOCITY,0,0,0);
+	alListenerfv(AL_ORIENTATION,listenerOri);
+  printf("Play the musikkk!\n");
+	alSourcePlay(source[0]);
+	return 1;
+}
+
 void gameProgressScreen(){
-  cout<<"Game is in progress\n";
+  initMusic();
+  m.generateMaze();
 }
 
 void display(void) {
