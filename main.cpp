@@ -13,6 +13,7 @@
 
 #include <iostream>
 #include <vector>
+#include <unistd.h>
 
 #include "shader_utils.h"
 #include "texture.hpp"
@@ -28,9 +29,27 @@ using glm::vec2;
 #define GAME_BEGIN 1
 #define GAME_OVER 2
 #define GAME_WON 3
-#define GAME_IN_PROGRESS 4
+#define GAME_ON 4
+#define DOOR_ON 5
+#define GAME_IN_PROGRESS 6
 
-int gameStatus = GAME_BEGIN; // by default game starts fresh
+struct GlobalVar{
+  int gameStatus;
+  float X,Y,z_start;
+  float door_width, door_height;
+  float angle;
+  GlobalVar(){
+    gameStatus = GAME_BEGIN;
+    X = 60.0;
+    Y = 70.0;
+    door_width = 20.0;
+    door_height = 100.0;
+    angle = 0.0;
+    z_start = -1.0;
+  }
+};
+
+GlobalVar G;
 
 GLuint program;
 
@@ -269,59 +288,99 @@ int initMusic() {
 	return 1;
 }
 
-void entranceDoor(float door_width, float door_height, float z){
-  // argument z specifies the z-plane where to model the entrance door
-  float X = 60.0;
-  glTranslatef(0.0,-10.0,0.0);
+void renderDoorWall(){
   vector <vec2> t = {vec2(0.0, 0.0), vec2(5.0, 0.0), vec2(5.0, 5.0), vec2(0.0, 5.0)};
-
   text = loadBMP_custom((char *) "./images/brickedWall.bmp"); // surrounding of the entrance door
-  vector <vec3> face = const_z(-door_width, -X, door_height, -door_height/2, z);
+  vector <vec3> face = const_z(-G.door_width, -G.X, G.door_height, -G.door_height/2, G.z_start);
   texturePolygon(face, t, 4);
-  face = const_z(X, door_width, door_height, -door_height/2, z);
+  face = const_z(G.X, G.door_width, G.door_height, -G.door_height/2, G.z_start);
   texturePolygon(face, t, 4);
   t[0] = vec2(0.15, 0.0); t[1] = vec2(1.15, 0.0); t[2] = vec2(1.15, 1.0); t[3] = vec2(0.15, 1.0);
-  face = const_z(door_width, -door_width, 70.0, door_height/2, z);
+  face = const_z(G.door_width, -G.door_width, G.Y, G.door_height/2, G.z_start);
   texturePolygon(face, t, 4);
+}
 
+void renderDoor(){
   // the door itself, it has two halves : left and right half
   text = loadBMP_custom((char *) "./images/door_left.bmp");
-  face = const_z(0.0, -door_width, door_height/2, -door_height/2, z);
-  texturePolygon(face, t, 4);
-  text = loadBMP_custom((char *) "./images/door_right.bmp");
-  face = const_z(door_width, 0.0, door_height/2, -door_height/2, z);
-  texturePolygon(face, t, 4);
+  vector <vec2> t(4);
+  t[0] = vec2(0.15, 0.0); t[1] = vec2(1.15, 0.0); t[2] = vec2(1.15, 1.0); t[3] = vec2(0.15, 1.0);
+  vector <vec3> face = const_z(0.0, -G.door_width, G.door_height/2, -G.door_height/2, G.z_start);
 
-  writeText(vec3(0.0,0.0,0.0), vec3(-door_width/2, door_height/2+10.0, z+0.1), "Press 'o' to open the door");
-  glTranslatef(0.0,10.0,0.0); // reverse the translational effect
+  glPushMatrix();
+  glTranslatef(-G.door_width, -G.door_height/2, G.z_start);
+  glRotatef(G.angle, 0.0, 1.0, 0.0);  // Rotate about Y-axis anti-clockwise
+  glTranslatef(G.door_width, G.door_height/2, -G.z_start);
+  texturePolygon(face, t, 4);
+  glPopMatrix();
+
+  text = loadBMP_custom((char *) "./images/door_right.bmp");
+  face = const_z(G.door_width, 0.0, G.door_height/2, -G.door_height/2, G.z_start);
+
+  glPushMatrix();
+  glTranslatef(G.door_width, -G.door_height/2, G.z_start);
+  glRotatef(-G.angle, 0.0, 1.0, 0.0);  // Rotate about Y-axis anti-clockwise
+  glTranslatef(-G.door_width, G.door_height/2, -G.z_start);
+  texturePolygon(face, t, 4);
+  glPopMatrix();
+}
+
+void gameOnScreen(){
+  // argument z specifies the z-plane where to model the entrance door
+  glPushMatrix();
+  glTranslatef(0.0,-10.0,0.0);
+  renderDoorWall();
+  renderDoor();
+  writeText(vec3(0.0,0.0,0.0), vec3(-G.door_width/2, G.door_height/2+10.0, G.z_start+0.1), "Press 'o' to open the door");
+  glPopMatrix();
+}
+
+void openDoor(){
+  if(G.angle==90.0){
+    // door has been opened
+    G.gameStatus = GAME_IN_PROGRESS;
+  } else {
+    glTranslatef(0.0,-10.0,0.0);
+    renderDoorWall();
+    renderDoor();
+    glTranslatef(0.0,10.0,0.0);
+    G.angle+=5.0;
+  }
+  glutPostRedisplay();
 }
 
 void gameProgressScreen(){
-  // initMusic();
-  entranceDoor(20.0, 100.0, -1.0);
   struct Grid maze = m.generateMaze();
+  cout<<"Game has started\n";
+  glPushMatrix();
+  glTranslatef(0.0,-10.0,0.0);
+  renderDoorWall();
+  renderDoor();
+  glPopMatrix();
 }
 
 void clickStart(int button, int state, int x, int y){
-  if(gameStatus==GAME_BEGIN){
+  if(G.gameStatus==GAME_BEGIN){
     // click is functinal only if welcome screen is to redirected to game screen
-    gameStatus = GAME_IN_PROGRESS;
+    G.gameStatus = GAME_ON;
     glutPostRedisplay();
   }
 }
 
 void normalKeys( unsigned char key, int x, int y ) {
-  if(key==27) exit(0);  //escape key
+  if(key==27 || key=='q') exit(0);  //escape key
   if(key=='o'){
     // open the door
+    G.gameStatus = DOOR_ON;
   }
+  glutPostRedisplay();
 }
 
 void display(void) {
     glClearColor(1.0, 1.0, 1.0, 1.0);
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    cout<<"gameStatus: "<<gameStatus<<"\n";
+    cout<<"gameStatus: "<<G.gameStatus<<"\n";
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -337,13 +396,13 @@ void display(void) {
               look_at.x, look_at.y, look_at.z,
               0.0, 1.0, 0.0);
 
-    cout<<"camera_coordinates: ("<<camera_coordinates.x<<" , "<<camera_coordinates.y<<" , "<<camera_coordinates.z<<")\n";
-    cout<<"look_at: ("<<look_at.x<<" , "<<look_at.y<<" , "<<look_at.z<<")\n";
-    cout<<"left: "<<lrbt.x<<" right: "<<lrbt.y<<"\n";
-    cout<<"bottom: "<<lrbt.z<<" top: "<<lrbt.w<<"\n";
-    cout<<"near: "<<zplanes.x<<" far: "<<zplanes.y<<"\n";
+    // cout<<"camera_coordinates: ("<<camera_coordinates.x<<" , "<<camera_coordinates.y<<" , "<<camera_coordinates.z<<")\n";
+    // cout<<"look_at: ("<<look_at.x<<" , "<<look_at.y<<" , "<<look_at.z<<")\n";
+    // cout<<"left: "<<lrbt.x<<" right: "<<lrbt.y<<"\n";
+    // cout<<"bottom: "<<lrbt.z<<" top: "<<lrbt.w<<"\n";
+    // cout<<"near: "<<zplanes.x<<" far: "<<zplanes.y<<"\n";
 
-    switch(gameStatus){
+    switch(G.gameStatus){
       case GAME_BEGIN:
         gameBeginScreen();
         break;
@@ -353,11 +412,17 @@ void display(void) {
       case GAME_WON:
         gameWonScreen();
         break;
+      case GAME_ON:
+        gameOnScreen();
+        break;
+      case DOOR_ON:
+        openDoor();
+        break;
       case GAME_IN_PROGRESS:
         gameProgressScreen();
         break;
       default:
-        cout<<"Deafult value of gameStatus: "<<gameStatus<<"\n";
+        cout<<"What a strange value of gameStatus: "<<G.gameStatus<<"\n";
         break;
     }
 
