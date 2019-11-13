@@ -273,22 +273,27 @@ void entranceDoor(float door_width, float door_height, float z){
   // argument z specifies the z-plane where to model the entrance door
   float X = 60.0;
   glTranslatef(0.0,-10.0,0.0);
-  vector <vec2> t = {vec2(0.15, 0.0), vec2(1.15, 0.0), vec2(1.15, 1.0), vec2(0.15, 1.0)};
+  vector <vec2> t = {vec2(0.0, 0.0), vec2(5.0, 0.0), vec2(5.0, 5.0), vec2(0.0, 5.0)};
 
-  text = loadBMP_custom((char *) "./images/blueBrickWall.bmp"); // surrounding of the entrance door
+  text = loadBMP_custom((char *) "./images/brickedWall.bmp"); // surrounding of the entrance door
   vector <vec3> face = const_z(-door_width, -X, door_height, -door_height/2, z);
   texturePolygon(face, t, 4);
   face = const_z(X, door_width, door_height, -door_height/2, z);
+  texturePolygon(face, t, 4);
+  t[0] = vec2(0.15, 0.0); t[1] = vec2(1.15, 0.0); t[2] = vec2(1.15, 1.0); t[3] = vec2(0.15, 1.0);
+  face = const_z(door_width, -door_width, 70.0, door_height/2, z);
   texturePolygon(face, t, 4);
 
   // the door itself, it has two halves : left and right half
   text = loadBMP_custom((char *) "./images/door_left.bmp");
   face = const_z(0.0, -door_width, door_height/2, -door_height/2, z);
-  // t[0] = vec2(0.15, 0.0); t[1] = vec2(1.15, 0.0); t[2] = vec2(1.15, 1.0); t[3] = vec2(0.15, 1.0);
   texturePolygon(face, t, 4);
-  // text = loadBMP_custom((char *) "./images/door_right.bmp");
-  // face = const_z(door_width, 0.0, door_height/2, -door_height/2, z);
-  // texturePolygon(face, t, 4);
+  text = loadBMP_custom((char *) "./images/door_right.bmp");
+  face = const_z(door_width, 0.0, door_height/2, -door_height/2, z);
+  texturePolygon(face, t, 4);
+
+  writeText(vec3(0.0,0.0,0.0), vec3(-door_width/2, door_height/2+10.0, z+0.1), "Press 'o' to open the door");
+  glTranslatef(0.0,10.0,0.0); // reverse the translational effect
 }
 
 void gameProgressScreen(){
