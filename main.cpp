@@ -39,12 +39,12 @@ struct GlobalVar{
   float door_width, door_height;
   float angle;
   GlobalVar(){
-    gameStatus = GAME_BEGIN;
+    gameStatus = GAME_IN_PROGRESS;
     X = 60.0;
     Y = 70.0;
     door_width = 20.0;
     door_height = 100.0;
-    angle = 0.0;
+    angle = 90.0;
     z_start = -1.0;
   }
 };
@@ -196,6 +196,16 @@ vector <vec3> const_z(float x_max, float x_min, float y_max, float y_min, float 
   return face;
 }
 
+vector <vec3> const_y(float x_max, float x_min, float y, float z_max, float z_min){
+  vector <vec3> face = {vec3(x_min,y,z_max), vec3(x_max,y,z_max), vec3(x_max,y,z_min), vec3(x_min,y,z_min)};
+  return face;
+}
+
+vector <vec3> const_x(float x, float y_max, float y_min, float z_max, float z_min){
+  vector <vec3> face = {vec3(x,y_min,z_min), vec3(x,y_min,z_max), vec3(x,y_max,z_max), vec3(x,y_max,z_min)};
+  return face;
+}
+
 void gameBeginScreen(){
   vector <vec2> t = {vec2(0.2, 0.0), vec2(1.0, 0.0), vec2(1.0, 1.0), vec2(0.2, 1.0)};
   vector <vec3> face = const_z(60.0, -60.0, 60.0, -60.0, G.z_start);
@@ -204,8 +214,8 @@ void gameBeginScreen(){
   writeText(vec3(1.0, 1.0, 1.0), vec3(-30.0, 50.0, G.z_start+0.01), "CS360 - PROJECT - A 3D maze game");
   writeText(vec3(1.0, 1.0, 1.0), vec3(-25.0, 40.0, G.z_start+0.01), "Find the DIAMOND");
   writeText(vec3(1.0, 1.0, 1.0), vec3(-20.0, 20.0, G.z_start+0.01), "Click to play!");
-  writeText(vec3(1.0, 1.0, 1.0), vec3(20.0, -20.0, G.z_start+0.01), "Divya Chauhan 160246");
-  writeText(vec3(1.0, 1.0, 1.0), vec3(20.0, -30.0, G.z_start+0.01), "Rahul BS 160xxx");
+  writeText(vec3(1.0, 1.0, 1.0), vec3(10.0, -10.0, G.z_start+0.01), "Divya Chauhan 160246");
+  writeText(vec3(1.0, 1.0, 1.0), vec3(10.0, -20.0, G.z_start+0.01), "Rahul BS 160xxx");
 }
 
 void gameOverScreen(){
@@ -292,7 +302,7 @@ void renderDoorWall(){
   texturePolygon(face, t, 4);
   face = const_z(G.X, G.door_width, G.door_height, -G.door_height/2, G.z_start);
   texturePolygon(face, t, 4);
-  t[0] = vec2(0.15, 0.0); t[1] = vec2(1.15, 0.0); t[2] = vec2(1.15, 1.0); t[3] = vec2(0.15, 1.0);
+  t[0] = vec2(0.0, 0.1); t[1] = vec2(4.0, 0.1); t[2] = vec2(4.0, 1.0); t[3] = vec2(0.0, 1.0);
   face = const_z(G.door_width, -G.door_width, G.Y, G.door_height/2, G.z_start);
   texturePolygon(face, t, 4);
 }
@@ -347,13 +357,42 @@ void openDoor(){
 }
 
 void gameProgressScreen(){
-  struct Grid maze = m.generateMaze();
-  cout<<"Game has started\n";
   glPushMatrix();
   glTranslatef(0.0,-10.0,0.0);
+  G.door_width = 10.0;
   renderDoorWall();
   renderDoor();
+  // render floor
+  text = loadBMP_custom((char *) "./images/floor.bmp");
+  vector <vec3> face = const_y(G.X, -G.X, -G.door_height/2, G.z_start, G.z_start-G.door_width-10.0);
+  vector <vec2> t = {vec2(0.0, 0.0), vec2(5.0, 0.0), vec2(5.0, 5.0), vec2(0.0, 5.0)};
+  texturePolygon(face, t, 4);
+  face[0] = vec3(-G.X, -G.door_height/2, G.z_start-G.door_width-10.0);
+  face[1] = vec3(G.X, -G.door_height/2, G.z_start-G.door_width-10.0);
+  face[2] = vec3(10.0, -G.door_height/2, G.z_start-G.door_width-30.0);
+  face[3] = vec3(-10.0, -G.door_height/2, G.z_start-G.door_width-30.0);
+  texturePolygon(face, t, 4);
+
+  // render walls
+  text = loadBMP_custom((char *) "./images/wall.bmp");
+  // RIGHT Half
+  face = const_x(G.X, G.Y, -G.door_height/2, G.z_start, G.z_start-G.door_width-10.0);
+  texturePolygon(face, t, 4);
+  face[0] = vec3(10.0, -G.door_height/2, G.z_start-G.door_width-30.0);
+  face[1] = vec3(G.X, -G.door_height/2, G.z_start-G.door_width-10.0);
+  face[2] = vec3(G.X, G.Y, G.z_start-G.door_width-10.0);
+  face[3] = vec3(10.0, G.Y, G.z_start-G.door_width-30.0);
+  texturePolygon(face, t, 4);
+  // LEFT Half
+  face = const_x(-G.X, G.Y, -G.door_height/2, G.z_start, G.z_start-G.door_width-10.0);
+  texturePolygon(face, t, 4);
+  face[0] = vec3(-10.0, -G.door_height/2, G.z_start-G.door_width-30.0);
+  face[1] = vec3(-G.X, -G.door_height/2, G.z_start-G.door_width-10.0);
+  face[2] = vec3(-G.X, G.Y, G.z_start-G.door_width-10.0);
+  face[3] = vec3(-10.0, G.Y, G.z_start-G.door_width-30.0);
+  texturePolygon(face, t, 4);
   glPopMatrix();
+  struct Grid maze = m.generateMaze();
 }
 
 void clickStart(int button, int state, int x, int y){
@@ -369,6 +408,26 @@ void normalKeys( unsigned char key, int x, int y ) {
   if(key=='o'){
     // open the door
     G.gameStatus = DOOR_ON;
+  }
+  glutPostRedisplay();
+}
+
+void specialKeys(int key, int x, int y){
+  vec3 camera_coordinates = camera.getCameraCoordinates();
+  switch (key) {
+    case GLUT_KEY_LEFT:
+      camera.updateLookAtVector(vec3(-10.0, 0.0, 0.0));  // view along the -ve X-axis
+      break;
+    case GLUT_KEY_RIGHT:
+      camera.updateLookAtVector(vec3(10.0, 0.0, 0.0));  // view along the +ve X-axis
+      break;
+    case GLUT_KEY_UP:
+      camera.updateCameraCoordinates(vec3(camera_coordinates.x, camera_coordinates.y, camera_coordinates.z-2.0));
+      break;
+    case GLUT_KEY_DOWN:
+      camera.updateCameraCoordinates(vec3(camera_coordinates.x, camera_coordinates.y, camera_coordinates.z+2.0));
+      break;
+    default: break;
   }
   glutPostRedisplay();
 }
@@ -473,6 +532,7 @@ int main(int argc, char** argv) {
   glutReshapeFunc (reshape);
   glutMouseFunc(clickStart);
   glutKeyboardFunc(normalKeys);
+  glutSpecialFunc(specialKeys);
   glutMainLoop ();
   free_resources();
   return 0;
