@@ -1,9 +1,3 @@
-/*
-$ g++ -ggdb -std=c++11 -c -o shader_utils.o shader_utils.cpp
-$ g++ -ggdb -std=c++11 -c -o texture.o texture.cpp
-$ g++ -ggdb -std=c++11 main.cpp MazeGenerator.cpp shader_utils.o texture.o -lglut -lGLEW -lGL -lGLU -lm -lalut -lopenal -o game
-*/
-
 #include <GL/glew.h>
 #include <GL/glut.h>
 
@@ -22,6 +16,7 @@ $ g++ -ggdb -std=c++11 main.cpp MazeGenerator.cpp shader_utils.o texture.o -lglu
 
 #include "shader_utils.h"
 #include "texture.hpp"
+#include "Camera.h"
 #include "MazeGenerator.h"
 
 using namespace std;
@@ -35,7 +30,7 @@ using glm::vec2;
 #define GAME_WON 3
 #define GAME_IN_PROGRESS 4
 
-int gameStatus=4; // by default game starts fresh
+int gameStatus = GAME_BEGIN; // by default game starts fresh
 
 GLuint program;
 
@@ -48,6 +43,8 @@ GLint uniform_m_3x3_inv_transp = -1, uniform_v_inv = -1;
 
 GLuint text;
 GLuint TextureID = 0;
+
+Camera camera(vec3(0.0, 0.0, 5.0), vec3(0.0, 0.0, -10.0));  // view in the negative z-direction
 Maze m(100,100);
 
 int compile_link_shaders(char* vshader_filename, char* fshader_filename){
@@ -272,16 +269,75 @@ int initMusic() {
 	return 1;
 }
 
+void entranceDoor(float door_width, float door_height, float z){
+  // argument z specifies the z-plane where to model the entrance door
+  float X = 60.0;
+  glTranslatef(0.0,-10.0,0.0);
+  vector <vec2> t = {vec2(0.15, 0.0), vec2(1.15, 0.0), vec2(1.15, 1.0), vec2(0.15, 1.0)};
+
+  text = loadBMP_custom((char *) "./images/blueBrickWall.bmp"); // surrounding of the entrance door
+  vector <vec3> face = const_z(-door_width, -X, door_height, -door_height/2, z);
+  texturePolygon(face, t, 4);
+  face = const_z(X, door_width, door_height, -door_height/2, z);
+  texturePolygon(face, t, 4);
+
+  // the door itself, it has two halves : left and right half
+  text = loadBMP_custom((char *) "./images/door_left.bmp");
+  face = const_z(0.0, -door_width, door_height/2, -door_height/2, z);
+  // t[0] = vec2(0.15, 0.0); t[1] = vec2(1.15, 0.0); t[2] = vec2(1.15, 1.0); t[3] = vec2(0.15, 1.0);
+  texturePolygon(face, t, 4);
+  // text = loadBMP_custom((char *) "./images/door_right.bmp");
+  // face = const_z(door_width, 0.0, door_height/2, -door_height/2, z);
+  // texturePolygon(face, t, 4);
+}
+
 void gameProgressScreen(){
-  initMusic();
-  m.generateMaze();
+  // initMusic();
+  entranceDoor(20.0, 100.0, -1.0);
+  struct Grid maze = m.generateMaze();
+}
+
+void clickStart(int button, int state, int x, int y){
+  if(gameStatus==GAME_BEGIN){
+    // click is functinal only if welcome screen is to redirected to game screen
+    gameStatus = GAME_IN_PROGRESS;
+    glutPostRedisplay();
+  }
+}
+
+void normalKeys( unsigned char key, int x, int y ) {
+  if(key==27) exit(0);  //escape key
+  if(key=='o'){
+    // open the door
+  }
 }
 
 void display(void) {
     glClearColor(1.0, 1.0, 1.0, 1.0);
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glLoadIdentity();
+
     cout<<"gameStatus: "<<gameStatus<<"\n";
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    vec4 lrbt = camera.getlrbt();
+    vec2 zplanes = camera.getZplanes();
+    glFrustum(lrbt.x, lrbt.y,  lrbt.z, lrbt.w, zplanes.x, zplanes.y);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+
+    vec3 camera_coordinates = camera.getCameraCoordinates();
+    vec3 look_at = camera.getLookAtVector();
+    gluLookAt(camera_coordinates.x, camera_coordinates.y, camera_coordinates.z,
+              look_at.x, look_at.y, look_at.z,
+              0.0, 1.0, 0.0);
+
+    cout<<"camera_coordinates: ("<<camera_coordinates.x<<" , "<<camera_coordinates.y<<" , "<<camera_coordinates.z<<")\n";
+    cout<<"look_at: ("<<look_at.x<<" , "<<look_at.y<<" , "<<look_at.z<<")\n";
+    cout<<"left: "<<lrbt.x<<" right: "<<lrbt.y<<"\n";
+    cout<<"bottom: "<<lrbt.z<<" top: "<<lrbt.w<<"\n";
+    cout<<"near: "<<zplanes.x<<" far: "<<zplanes.y<<"\n";
+
     switch(gameStatus){
       case GAME_BEGIN:
         gameBeginScreen();
@@ -296,8 +352,10 @@ void display(void) {
         gameProgressScreen();
         break;
       default:
+        cout<<"Deafult value of gameStatus: "<<gameStatus<<"\n";
         break;
     }
+
     glFlush ();
     glutSwapBuffers();
 }
@@ -312,10 +370,15 @@ void init (void) {
 
 void reshape (int w, int h) {
    glViewport(0, 0, (GLsizei) w, (GLsizei) h);
-   glMatrixMode(GL_PROJECTION);
-   glLoadIdentity();
-   glFrustum(-50.0, 50.0, -40.0, 40.0, 10, 70);
-   glMatrixMode(GL_MODELVIEW);
+  //  glMatrixMode(GL_PROJECTION);
+  //  glLoadIdentity();
+  //  vec4 lrbt = camera.getlrbt();
+  //  vec2 zplanes = camera.getZplanes();
+  //  cout<<"left: "<<lrbt.x<<" right: "<<lrbt.y<<"\n";
+  //  cout<<"bottom: "<<lrbt.z<<" top: "<<lrbt.w<<"\n";
+  //  cout<<"near: "<<zplanes.x<<" far: "<<zplanes.y<<"\n";
+  //  glFrustum(lrbt.x, lrbt.y,  lrbt.z, lrbt.w, zplanes.x, zplanes.y);
+  //  glMatrixMode(GL_MODELVIEW);
 }
 
 int main(int argc, char** argv) {
@@ -341,6 +404,8 @@ int main(int argc, char** argv) {
   init ();
   glutDisplayFunc (display);
   glutReshapeFunc (reshape);
+  glutMouseFunc(clickStart);
+  glutKeyboardFunc(normalKeys);
   glutMainLoop ();
   free_resources();
   return 0;

@@ -10,22 +10,21 @@ Maze::Maze(int dimx, int dimz){
   z_move[0] = 0; z_move[1] = 0; z_move[2] = 1; z_move[3] = -1;
   for(int i=0; i<150; i++)
     for(int j=0; j<150; j++)
-      maze[i][j]=0;
+      maze.arr[i][j]=0;
 }
 
 bool Maze::isValid(int xcoord, int zcoord){
   if(xcoord<0 || xcoord>gridx || zcoord<0 || zcoord>gridz) return false;
-  else if(maze[zcoord][xcoord]!=0) return false; // this cell has already been visited
+  else if(maze.arr[zcoord][xcoord]!=0) return false; // this cell has already been visited
   else return true;
 }
 
-void Maze::generateMaze(){
-  cout<<"Maze generation started\n";
+struct Grid Maze::generateMaze(){
   int start_x = rand()%gridx;
   int start_z = 0;
 
   while(start_z != gridz-1){
-    maze[start_z][start_x] = 1;
+    maze.arr[start_z][start_x] = 1;
     int t = rand()%4; // t is a random number generated in the range [0...3]
     int newx = start_x + x_move[t];
     int newz = start_z + z_move[t];
@@ -34,15 +33,9 @@ void Maze::generateMaze(){
       start_z=newz;
       start_x=newx;
     } else{
-      while(start_z<gridz-1 && maze[start_z][start_x]!=0) start_z++;
+      while(start_z<gridz-1 && maze.arr[start_z][start_x]!=0) start_z++;
     }
   }
-  maze[start_z][start_x]=1;
-  for(int i=0; i<gridz; i++){
-    for(int j=0; j<gridx; j++){
-      if(maze[i][j]==0) cout<<"  ";
-      else cout<<"1 ";
-    }
-    cout<<"\n";
-  }
+  maze.arr[start_z][start_x]=1;
+  return maze;
 }

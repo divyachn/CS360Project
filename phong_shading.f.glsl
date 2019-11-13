@@ -86,7 +86,7 @@ void main() {
     }
   }
 
-  gl_FragColor = 0.5*vec4(ambientLighting + diffuseReflection + specularReflection, 1.0) + 0.5*texture2D(tex, tex_coord);
-  //gl_FragColor = vec4(ambientLighting + diffuseReflection + specularReflection, 1.0) * texture2D(tex, tex_coord);
+  //gl_FragColor = 0.5*vec4(ambientLighting + diffuseReflection + specularReflection, 1.0) + 0.5*texture2D(tex, tex_coord);
+  gl_FragColor = vec4(ambientLighting + diffuseReflection + specularReflection, 1.0) * texture2D(tex, tex_coord);
   //gl_FragColor = vec4(ambientLighting + diffuseReflection + specularReflection, 1.0);
 }
