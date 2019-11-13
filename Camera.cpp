@@ -7,9 +7,6 @@ Camera::Camera(vec3 pos, vec3 dirn) {
   // constructor, specify the intial camera_coordinates, look_at vector, extremes of frustum, and near-far Z planes
   camera_coordinates = pos;
   look_at = dirn;
-  // cout<<"Inside Camera constructor\n";
-  // cout<<"Position: "<<camera_coordinates.x<<" "<<camera_coordinates.y<<" "<<camera_coordinates.z<<"\n";
-  // cout<<"Direction: "<<look_at.x<<" "<<look_at.y<<" "<<look_at.z<<"\n";
   updateFrustum();
 }
 

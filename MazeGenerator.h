@@ -4,7 +4,7 @@
 #include <iostream>
 
 struct Grid {
-  int arr[150][150];
+  char arr[150][150];
 };
 
 class Maze{

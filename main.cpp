@@ -44,7 +44,7 @@ struct GlobalVar{
     Y = 70.0;
     door_width = 20.0;
     door_height = 100.0;
-    angle = 90.0;
+    angle = 135.0;
     z_start = -1.0;
   }
 };
@@ -391,8 +391,25 @@ void gameProgressScreen(){
   face[2] = vec3(-G.X, G.Y, G.z_start-G.door_width-10.0);
   face[3] = vec3(-10.0, G.Y, G.z_start-G.door_width-30.0);
   texturePolygon(face, t, 4);
+
+  // MAZE - hard-coded for now
+  text = loadBMP_custom((char *) "./images/blueBrickWall.bmp");
+  face = const_x(10.0, G.Y, -G.door_height/2, G.z_start-G.door_width-30.0, G.z_start-G.door_width-75.0);
+  texturePolygon(face, t, 4);
+  face = const_x(-10.0, G.Y, -G.door_height/2, G.z_start-G.door_width-30.0, G.z_start-G.door_width-55.0);
+  texturePolygon(face, t, 4);
+
+  face = const_z(-10.0, -55.0, G.Y, -G.door_height/2, G.z_start-G.door_width-55.0);
+  texturePolygon(face, t, 4);
+  face = const_z(10.0, -15.0, G.Y, -G.door_height/2, G.z_start-G.door_width-75.0);
+  texturePolygon(face, t, 4);
+
+  face = const_x(-15.0, G.Y, -G.door_height/2, G.z_start-G.door_width-75.0, G.z_start-G.door_width-100.0);
+  texturePolygon(face, t, 4);
+  face = const_x(-55.0, G.Y, -G.door_height/2, G.z_start-G.door_width-55.0, G.z_start-G.door_width-100.0);
+  texturePolygon(face, t, 4);
+
   glPopMatrix();
-  struct Grid maze = m.generateMaze();
 }
 
 void clickStart(int button, int state, int x, int y){
@@ -416,16 +433,18 @@ void specialKeys(int key, int x, int y){
   vec3 camera_coordinates = camera.getCameraCoordinates();
   switch (key) {
     case GLUT_KEY_LEFT:
-      camera.updateLookAtVector(vec3(-10.0, 0.0, 0.0));  // view along the -ve X-axis
+      camera.updateLookAtVector(vec3(camera_coordinates.x-10.0, 0.0, 0.0));  // view along the -ve X-axis
       break;
     case GLUT_KEY_RIGHT:
-      camera.updateLookAtVector(vec3(10.0, 0.0, 0.0));  // view along the +ve X-axis
+      camera.updateLookAtVector(vec3(camera_coordinates.x+10.0, 0.0, 0.0));  // view along the +ve X-axis
       break;
     case GLUT_KEY_UP:
       camera.updateCameraCoordinates(vec3(camera_coordinates.x, camera_coordinates.y, camera_coordinates.z-2.0));
+      camera.updateLookAtVector(vec3(0.0, 0.0, camera_coordinates.z-10.0));
       break;
     case GLUT_KEY_DOWN:
       camera.updateCameraCoordinates(vec3(camera_coordinates.x, camera_coordinates.y, camera_coordinates.z+2.0));
+      camera.updateLookAtVector(vec3(0.0, 0.0, camera_coordinates.z+10.0));
       break;
     default: break;
   }
@@ -452,11 +471,11 @@ void display(void) {
               look_at.x, look_at.y, look_at.z,
               0.0, 1.0, 0.0);
 
-    // cout<<"camera_coordinates: ("<<camera_coordinates.x<<" , "<<camera_coordinates.y<<" , "<<camera_coordinates.z<<")\n";
-    // cout<<"look_at: ("<<look_at.x<<" , "<<look_at.y<<" , "<<look_at.z<<")\n";
-    // cout<<"left: "<<lrbt.x<<" right: "<<lrbt.y<<"\n";
-    // cout<<"bottom: "<<lrbt.z<<" top: "<<lrbt.w<<"\n";
-    // cout<<"near: "<<zplanes.x<<" far: "<<zplanes.y<<"\n";
+    cout<<"camera_coordinates: ("<<camera_coordinates.x<<" , "<<camera_coordinates.y<<" , "<<camera_coordinates.z<<")\n";
+    cout<<"look_at: ("<<look_at.x<<" , "<<look_at.y<<" , "<<look_at.z<<")\n";
+    cout<<"left: "<<lrbt.x<<" right: "<<lrbt.y<<"\n";
+    cout<<"bottom: "<<lrbt.z<<" top: "<<lrbt.w<<"\n";
+    cout<<"near: "<<zplanes.x<<" far: "<<zplanes.y<<"\n\n";
 
     switch(G.gameStatus){
       case GAME_BEGIN:
