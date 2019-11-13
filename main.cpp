@@ -287,7 +287,7 @@ int initMusic() {
 
 void renderDoorWall(){
   vector <vec2> t = {vec2(0.0, 0.0), vec2(5.0, 0.0), vec2(5.0, 5.0), vec2(0.0, 5.0)};
-  text = loadBMP_custom((char *) "./images/brickedWall.bmp"); // surrounding of the entrance door
+  text = loadBMP_custom((char *) "./images/brick_wall.bmp"); // surrounding of the entrance door
   vector <vec3> face = const_z(-G.door_width, -G.X, G.door_height, -G.door_height/2, G.z_start);
   texturePolygon(face, t, 4);
   face = const_z(G.X, G.door_width, G.door_height, -G.door_height/2, G.z_start);
