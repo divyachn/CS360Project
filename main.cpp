@@ -197,37 +197,34 @@ vector <vec3> const_z(float x_max, float x_min, float y_max, float y_min, float 
 }
 
 void gameBeginScreen(){
-  vector <vec2> t = {vec2(0.0, 0.0), vec2(1.0, 0.0), vec2(1.0, 1.0), vec2(0.0, 1.0)};
-  float z = -20.0;
-  vector <vec3> face = const_z(100.0, -100.0, 80.0, -80.0, z);
+  vector <vec2> t = {vec2(0.2, 0.0), vec2(1.0, 0.0), vec2(1.0, 1.0), vec2(0.2, 1.0)};
+  vector <vec3> face = const_z(60.0, -60.0, 60.0, -60.0, G.z_start);
   text = loadBMP_custom((char *) "./images/maze1.bmp");
   texturePolygon(face, t, 4);
-  writeText(vec3(1.0, 1.0, 1.0), vec3(-40.0, 60.0, z+0.01), "CS360 - PROJECT - A 3D maze game");
-  writeText(vec3(1.0, 1.0, 1.0), vec3(-25.0, 40.0, z+0.01), "Find the DIAMOND");
-  writeText(vec3(1.0, 1.0, 1.0), vec3(-20.0, 20.0, z+0.01), "Click to play!");
-  writeText(vec3(1.0, 1.0, 1.0), vec3(40.0, -60.0, z+0.01), "Divya Chauhan 160246");
-  writeText(vec3(1.0, 1.0, 1.0), vec3(40.0, -70.0, z+0.01), "Rahul BS 160xxx");
+  writeText(vec3(1.0, 1.0, 1.0), vec3(-30.0, 50.0, G.z_start+0.01), "CS360 - PROJECT - A 3D maze game");
+  writeText(vec3(1.0, 1.0, 1.0), vec3(-25.0, 40.0, G.z_start+0.01), "Find the DIAMOND");
+  writeText(vec3(1.0, 1.0, 1.0), vec3(-20.0, 20.0, G.z_start+0.01), "Click to play!");
+  writeText(vec3(1.0, 1.0, 1.0), vec3(20.0, -20.0, G.z_start+0.01), "Divya Chauhan 160246");
+  writeText(vec3(1.0, 1.0, 1.0), vec3(20.0, -30.0, G.z_start+0.01), "Rahul BS 160xxx");
 }
 
 void gameOverScreen(){
-  vector <vec2> t = {vec2(0.1, 0.0), vec2(1.0, 0.0), vec2(1.0, 1.0), vec2(0.1, 1.0)};
-  float z = -20.0;
-  vector <vec3> face = const_z(100.0, -100.0, 80.0, -80.0, z);
+  vector <vec2> t = {vec2(0.2, 0.0), vec2(1.0, 0.0), vec2(1.0, 1.0), vec2(0.2, 1.0)};
+  vector <vec3> face = const_z(60.0, -60.0, 60.0, -60.0, G.z_start);
   text = loadBMP_custom((char *) "./images/gameOver.bmp");
   texturePolygon(face, t, 4);
-  writeText(vec3(0.0, 0.0, 0.0), vec3(-70.0, -70.0, z+0.01), "Press q to quit and r to replay.");
+  writeText(vec3(0.0, 0.0, 0.0), vec3(-20.0, 40.0, G.z_start+0.01), "Press q to quit and r to replay.");
 }
 
 void gameWonScreen(){
-  vector <vec2> t = {vec2(0.0, 0.0), vec2(1.0, 0.0), vec2(1.0, 1.0), vec2(0.0, 1.0)};
-  float z = -20.0;
-  vector <vec3> face = const_z(70.0, 20.0, 50.0, -50.0, z);
+  vector <vec2> t = {vec2(0.1, 0.0), vec2(1.0, 0.0), vec2(1.1, 1.0), vec2(0.1, 1.0)};
   text = loadBMP_custom((char *) "./images/gameWon.bmp");
+  vector <vec3> face = const_z(50.0, 5.0, 50.0, -50.0, G.z_start);
   texturePolygon(face, t, 4);
-  face = const_z(-10.0, -90.0, 50.0, -50.0, z);
   text = loadBMP_custom((char *) "./images/diamond.bmp");
+  face = const_z(-5.0, -60.0, 50.0, -50.0, G.z_start+0.01);
   texturePolygon(face, t, 4);
-  writeText(vec3(0.0, 0.0, 0.0), vec3(-70.0, -70.0, z+0.01), "Press q to quit and r to replay.");
+  writeText(vec3(0.0, 0.0, 0.0), vec3(-20.0, 40.0, G.z_start+0.01), "Press q to quit and r to replay.");
 }
 
 // Add music while game is in progress
