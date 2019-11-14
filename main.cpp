@@ -39,7 +39,7 @@ struct GlobalVar{
   float door_width, door_height;
   float angle;
   GlobalVar(){
-    gameStatus = GAME_IN_PROGRESS;
+    gameStatus = GAME_BEGIN;
     X = 60.0;
     Y = 70.0;
     door_width = 20.0;
@@ -393,6 +393,7 @@ void gameProgressScreen(){
   texturePolygon(face, t, 4);
 
   // MAZE - hard-coded for now
+  // glScalef(2.0,1.0,1.0);
   text = loadBMP_custom((char *) "./images/blueBrickWall.bmp");
   face = const_x(10.0, G.Y, -G.door_height/2, G.z_start-G.door_width-30.0, G.z_start-G.door_width-75.0);
   texturePolygon(face, t, 4);
@@ -408,7 +409,7 @@ void gameProgressScreen(){
   texturePolygon(face, t, 4);
   face = const_x(-55.0, G.Y, -G.door_height/2, G.z_start-G.door_width-55.0, G.z_start-G.door_width-100.0);
   texturePolygon(face, t, 4);
-
+  // glScalef(0.5,1.0,1.0);
   glPopMatrix();
 }
 
@@ -431,12 +432,21 @@ void normalKeys( unsigned char key, int x, int y ) {
 
 void specialKeys(int key, int x, int y){
   vec3 camera_coordinates = camera.getCameraCoordinates();
+  vec3 look_at = camera.getLookAtVector();
+  int dirn=2;
+  if(look_at.x!=0){
+    dirn = 0;
+  } else if(look_at.y!=0){
+    dirn = 1;
+  }
   switch (key) {
     case GLUT_KEY_LEFT:
-      camera.updateLookAtVector(vec3(camera_coordinates.x-10.0, 0.0, 0.0));  // view along the -ve X-axis
+      // camera.updateLookAtVector(vec3(camera_coordinates.x-10.0, 0.0, 0.0));  // view along the -ve X-axis
+      glRotatef(90.0,0.0,1.0,0.0);
       break;
     case GLUT_KEY_RIGHT:
-      camera.updateLookAtVector(vec3(camera_coordinates.x+10.0, 0.0, 0.0));  // view along the +ve X-axis
+      glRotatef(-90.0,0.0,1.0,0.0);
+      // camera.updateLookAtVector(vec3(camera_coordinates.x+10.0, 0.0, 0.0));  // view along the +ve X-axis
       break;
     case GLUT_KEY_UP:
       camera.updateCameraCoordinates(vec3(camera_coordinates.x, camera_coordinates.y, camera_coordinates.z-2.0));
