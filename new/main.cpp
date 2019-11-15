@@ -25,7 +25,7 @@ Global Declarations
 #define GAME_ON 1
 #define GAME_WON 2
 
-#define MAZE_SIZE 21
+#define MAZE_SIZE 13
 
 // Main Window
 int mainWindow;
@@ -49,7 +49,7 @@ int gameState = 1;
 float angle=0.0f;
 float lx=0.0f,lz=-1.0f, ly=0;
 float tilt = 0;
-float x=0,z=4, y = 0;
+float x=2 ,z=2, y = 0;
 
 float origTilt;
 float origLy;
@@ -237,11 +237,15 @@ typedef struct
 Node *nodes; //Nodes array
 const int width=MAZE_SIZE, height=MAZE_SIZE; //Maze dimensions
 int maze[width][height];
+int diamondx, diamondz;
 
 int init_maze( )
 {
 	int i, j;
 	Node *n;
+
+	diamondx = 2*(1 + 2*(rand()%(width/2))); // *2 for world coordinate
+	diamondz = 2*(1 + 2*(rand()%(height/2)));
 	
 	//Allocate memory for maze
 	nodes = (Node*)calloc( width * height, sizeof( Node ) );
@@ -531,11 +535,14 @@ bool checkCollision()
 	int roundedZ = round(camWorldZ);
 	int roundedX = round(camWorldX);
 
+	cout<<"camWorld: "<<camWorldX<<","<<camWorldZ<<"\n";
+	cout<<"trunc: "<<truncX<<","<<truncZ<<"\n";
+	cout<<"maze_value: "<<maze[roundedX][roundedZ]<<"\n\n";
 	if (maze[roundedX][roundedZ] == 0) {
-		if (camWorldX > truncX+0.5 || truncZ > 1) {
+		// if (camWorldX > truncX+0.5 || truncZ > 1) {
 			return true;
-			}
-		else return false;
+			// }
+		// else return false;
 	} else
 	 return false;
 }
@@ -592,8 +599,9 @@ void display(void)
 	// cout<<"game status: "<<gameState<<"\n";
 	//Check if goal is reached
 	
-	
-	if (x > 16 & x < 19 & z > 16 & z < 19) {
+	// cout<<x<<":"<<z<<","<<diamondx<<":"<<diamondz<<endl;
+	if (x > diamondx-1 && x < diamondx+1 && z > diamondz-1 && z < diamondz+1) {
+		cout<<x<<":"<<z<<endl;
 		gameState = GAME_WON;
 	}
 
@@ -650,7 +658,8 @@ void display(void)
 	//Drawing the blip for camera position
 	glPushMatrix();
 		glTranslatef(x+lx, -0.60f, z+lz);
-		glRotatef(turnAngle, 0, 1, 0);
+		glRotatef(deltaAngle, 0, 1, 0);
+		glScalef(0.5,1.0,0.5);
 		glBegin(GL_POLYGON);
 	 		glNormal3f (0,1, 0);
 			glColor3f(0, 0.8, 0.8);
@@ -702,14 +711,14 @@ void display(void)
 	//Light for diamond
 	glDisable(GL_LIGHTING);
 	glPushMatrix();
-		set_light(light_2, 20, 18);
+		set_light(light_2, diamondx, diamondz);
 	glPopMatrix();
 	glEnable(GL_LIGHTING);
 
 	//diamond
 	glPushMatrix ();
 		glColor3f(51.0/255.0,1.0, 1.0);
-		glTranslatef(20, -0.6, 18);
+		glTranslatef(diamondx, -0.6, diamondz);
 		glutSolidOctahedron();
 	glPopMatrix ();
 
@@ -816,10 +825,11 @@ void releaseSpecialKey(int key, int x, int y)
 
 
 //Passive mouse movement callback
-void mouseMove(int x, int y)
+void mouseMove(int xx, int yy)
 {
 	//turnAngle calculated for triangle blip rotation
-	turnAngle = -1 * (x - xOrigin);
+	float t = turnAngle;
+	turnAngle = -1 * (xx - xOrigin);
 	if (turnAngle>0){
 		turnAngle = turnAngle + 10;
 	} else if (turnAngle<0)
@@ -828,13 +838,23 @@ void mouseMove(int x, int y)
 		turnAngle = 0;
 
 	//Change in x and y values due to mouse movement
-	deltaAngle = (x - xOrigin) * 0.02f;
-	deltaAngleY = (y - yOrigin) * 0.02f;
+	float dAngle = deltaAngle, dAngleY = deltaAngleY;
+	deltaAngle = (xx - xOrigin) * 0.01f;
+	deltaAngleY = (yy - yOrigin) * 0.00f;
 
 	//Calculating camera direction
+	int lx1=lx,ly1=ly,lz1=lz;
 	lx = sin(angle + deltaAngle);
 	lz = -cos(angle + deltaAngle);
 	ly =  -sin(deltaAngleY);
+	if(checkCollision()){
+		// there is collision, restore lx,ly,lz
+		lx=lx1; ly=ly1; lz=lz1;
+		turnAngle = t;
+		deltaAngle = dAngle;
+		deltaAngleY = dAngleY;
+	}
+
 
 	//
 	glutSetWindow(mainWindow);
