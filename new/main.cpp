@@ -24,6 +24,8 @@ Global Declarations
 #define GAME_ON 1
 #define GAME_WON 2
 
+#define MAZE_SIZE 13
+
 // Main Window
 int mainWindow;
 int SizeX=800;
@@ -40,7 +42,7 @@ bool mapMode = false;
 bool win = false;
 
 // Game state
-int gameState = 0;
+int gameState = 1;
 
 //Angle of rotation, direction vector of camera and position vector of camera
 float angle=0.0f;
@@ -63,16 +65,10 @@ float deltaX = 0;
 float deltaZ = 0;
 
 
-//Texture variables
-unsigned int g_program_obj = 0;
-unsigned int g_vertex_obj = 0;
-unsigned int g_fragment_obj = 0;
-
 unsigned int g_wall = 0;
 unsigned int g_ground = 1;
 unsigned int g_start = 2;
 
-//Text variable
 unsigned int g_bitmap_text_handle = 0;
 
 //Datastructures for lights and material properties
@@ -104,15 +100,15 @@ const materials_t materialM = {
 //Universal light (Shade of white)
 light_t light_1 = {
 	1, GL_LIGHT1,
-	{ 0.01, 0.01, 0.01, 1 },
-	{ 0.5, 0.5, 0.5, 1 },
+	{ 0.01, 0.01, 0.20, 1 },
+	{ 0.5, 0.5, 0.6, 1 },
 	{0.3f, 0.3f, 0.3f, 1.0f}
 };
 
 //Yellowish light for diamond
 light_t light_2 = {
 	2, GL_LIGHT2,
-	{ 0.1, 0.1, 0.1, 1 },
+	{ 0.4, 0.8, 0.1, 1 },
 	{ 0.7, 0.8, 0.5, 1 },
 	{0.5f, 0.5f, 0.5f, 1.0f}
 };
@@ -213,19 +209,20 @@ void draw_text(const char* text)
 }
 
 //Array for map layout. 0 for wall cubes and 2 for ground
-int a[12][12] = {
-	   {2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0} ,
-	   {0, 2, 0, 2, 0, 0, 0, 2, 2, 2, 2, 0} ,
-	   {0, 2, 2, 2, 2, 0, 0, 2, 0, 2, 2, 0} ,
-	   {0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0} ,
-	   {0, 0, 2, 2, 0, 2, 0, 0, 0, 2, 0, 0},
-	   {0, 0, 0, 2, 0, 0, 0, 2, 0, 2, 0, 0} ,
-	   {0, 0, 0, 2, 0, 0, 0, 2, 0, 2, 0, 0} ,
-	   {0, 0, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0} ,
-	   {0, 2, 2, 2, 0, 2, 0, 2, 0, 2, 0, 0} ,
-	   {0, 0, 2, 2, 0, 0, 2, 2, 2, 2, 2, 0},
-	   {0, 0, 2, 2, 0, 0, 0, 0, 2, 2, 2, 0},
-	   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+int maze[MAZE_SIZE][MAZE_SIZE] = {
+	   {2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} ,
+	   {0, 2, 0, 2, 0, 0, 0, 2, 2, 2, 2, 0, 0} ,
+	   {0, 2, 2, 2, 2, 0, 0, 2, 0, 2, 2, 2, 2} ,
+	   {0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 2} ,
+	   {0, 0, 2, 2, 0, 2, 0, 0, 0, 2, 0, 0, 2},
+	   {0, 0, 0, 2, 0, 0, 0, 2, 0, 2, 0, 2, 2} ,
+	   {0, 0, 0, 2, 0, 0, 0, 2, 0, 2, 0, 0, 0} ,
+	   {0, 0, 2, 2, 2, 2, 2, 2, 2, 0, 0, 2, 2} ,
+	   {0, 2, 2, 2, 0, 2, 0, 2, 0, 2, 0, 0, 0} ,
+	   {0, 0, 2, 2, 0, 0, 2, 2, 2, 2, 2, 0, 0},
+	   {0, 2, 2, 2, 0, 0, 2, 0, 0, 2, 2, 2, 0},
+	   {0, 0, 2, 0, 0, 0, 2, 0, 2, 2, 2, 2, 0},
+		 {0, 2, 2, 2, 0, 0, 2, 2, 0, 0, 0, 0, 0}
 };
 
 //Function for window resize
@@ -355,7 +352,7 @@ bool checkCollision()
 	int roundedZ = round(camWorldZ);
 	int roundedX = round(camWorldX);
 
-	if (a[roundedX][roundedZ] == 0) {
+	if (maze[roundedX][roundedZ] == 0) {
 		if (camWorldX > truncX+0.5 || truncZ > 1) {
 			return true;
 			}
@@ -413,7 +410,7 @@ void gameBeginScreen(){
 
 void display(void)
 {
-	cout<<"game status: "<<gameState<<"\n";
+	// cout<<"game status: "<<gameState<<"\n";
 	//Check if goal is reached
 	
 	
@@ -473,14 +470,16 @@ void display(void)
 
 	//Drawing the blip for camera position
 	glPushMatrix();
-		glTranslatef(x+lx, -0.99, z+lz);
+		glTranslatef(x+lx, -0.60f, z+lz);
 		glRotatef(turnAngle, 0, 1, 0);
-	 	glBegin(GL_TRIANGLES);
+		glBegin(GL_POLYGON);
 	 		glNormal3f (0,1, 0);
+			glColor3f(0, 0.8, 0.8);
+			glVertex3f(0.25f, 0, 0.25f);
+			// glVertex3f(0, 0, 0);
+			glVertex3f(-0.25f, 0, 0.25f);
 			glColor3f(1, 0, 0);
-			glVertex3f(0.5f, 0, 0.5f);
-			glVertex3f(-0.5f, 0, 0.5f);
-			glVertex3f(0, 0, -0.5f);
+			glVertex3f(0, 0, -0.75f);
 		glEnd();
 	glPopMatrix();
 
@@ -496,13 +495,13 @@ void display(void)
 		glPopMatrix();
 		glEnable(GL_LIGHTING);
 
-		//Helper text
-		glPushMatrix();
-			glColor3f(1, 1, 1);
-			glTranslatef(-2, 1, -1); // this will work
-			glRasterPos2i(0, 0); // centre the text
-			draw_text("Hi!, go right -->");
-		glPopMatrix();
+		// //Helper text
+		// glPushMatrix();
+		// 	glColor3f(1, 1, 1);
+		// 	glTranslatef(-2, 1, -1); // this will work
+		// 	glRasterPos2i(0, 0); // centre the text
+		// 	draw_text("Hi!, go right -->");
+		// glPopMatrix();
 	} 
 	else if(gameState == GAME_WON) {
 		//Light for text
@@ -532,28 +531,13 @@ void display(void)
 	glPushMatrix ();
 		glColor3f(51.0/255.0,1.0, 1.0);
 		glTranslatef(20, -0.6, 18);
-		// glutSolidTeapot(0.6);
 		glutSolidOctahedron();
-	glPopMatrix ();
-
-	//Light for moon
-	glDisable(GL_LIGHTING);
-	glPushMatrix();
-		set_light(light_1, 70, 70);
-	glPopMatrix();
-	glEnable(GL_LIGHTING);
-
-	//Drawing moon
-	glPushMatrix ();
-		glColor3f(1.0f, 1.0f, 1.0f);
-		glTranslatef(60.0f, 26.0f, 60.0f);
-		glutSolidSphere(5.0f,20,10);
 	glPopMatrix ();
 
 	float stary;
 
-	for(int i = 0; i < 12; i++) {
-		for(int j=0; j < 12; j++) {
+	for(int i = 0; i < MAZE_SIZE; i++) {
+		for(int j=0; j < MAZE_SIZE; j++) {
 
 			//Stars at varying heights
 			if (i > 6 & j > 6) {
@@ -573,7 +557,7 @@ void display(void)
 			glPopMatrix();
 
 			//Draw a wall
-			if (a[i][j] == 0) {
+			if (maze[i][j] == 0) {
 				glPushMatrix();
 					glTranslatef(2*i, 0, j*2);
 					glEnable(GL_TEXTURE_2D);
@@ -614,7 +598,7 @@ void pressKey(unsigned char key, int xx, int yy)
 			origTilt = tilt;
 			origLy = ly;
 			break;
-		case 27 : 
+		case 'q' : 
 			glutDestroyWindow(mainWindow);
 			exit(0);
 			break;
