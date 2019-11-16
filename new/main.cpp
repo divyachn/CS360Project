@@ -401,6 +401,17 @@ void drawWall(float x1, float x2, float y1, float y2, float z1, float z2) {
 		glTexCoord2f(0,1);
 		glVertex3f(x1, y2, z2);
 
+		// Bottom
+		glNormal3f (0,1, 0);
+		glTexCoord2f(0,0);
+		glVertex3f(x1, y1, z1);
+		glTexCoord2f(1,0);
+		glVertex3f(x2, y1, z1);
+		glTexCoord2f(1,1);
+		glVertex3f(x2, y1, z2);
+		glTexCoord2f(0,1);
+		glVertex3f(x1, y1, z2);
+
 		//Backside
 		glNormal3f (1,0, 0);
 		glTexCoord2f(0,0);
