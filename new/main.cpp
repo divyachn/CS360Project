@@ -486,6 +486,8 @@ void gameProgressScreen() {
 	if (x > diamondx-1 && x < diamondx+1 && z > diamondz-1 && z < diamondz+1) {
 		cout<<x<<":"<<z<<endl;
 		gameState = GAME_WON;
+		mapMode = true;
+		glutPostRedisplay();
 	}
 	//If there has been change in X and Z position, compute new position
 	if (deltaX || deltaZ) {
@@ -498,11 +500,6 @@ void gameProgressScreen() {
 	glClearColor(0.139, 0.134, 0.130, 1);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-
-	//Stop fps view when goal is reached
-	if (gameState == GAME_WON) {
-		mapMode = true;
-	}
 
 	//Incremental zoomin and zoomout
 	if (mapMode) {
@@ -689,6 +686,9 @@ void display(){
 			gameBeginScreen();
 			break;
 		case GAME_ON:
+			gameProgressScreen();
+			break;
+		case GAME_WON:
 			gameProgressScreen();
 			break;
 		default:
