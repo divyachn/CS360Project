@@ -95,6 +95,14 @@ light_t light_1 = {
 	{0.3f, 0.3f, 0.3f, 1.0f}
 };
 
+// For welcome screen
+light_t light_3 = {
+	1, GL_LIGHT1,
+	{ 0.8, 0.7, 0.7, 1 },
+	{ 0.5, 0.5, 0.6, 1 },
+	{0.3f, 0.3f, 0.3f, 1.0f}
+};
+
 //Yellowish light for diamond
 light_t light_2 = {
 	2, GL_LIGHT2,
@@ -450,9 +458,8 @@ bool checkCollision() {
 	cout<<"trunc: "<<truncX<<","<<truncZ<<"\n";
 	cout<<"maze_value: "<<maze[roundedX][roundedZ]<<"\n\n";
 	if (maze[roundedX][roundedZ] == 0) {
-		// if (camWorldX > truncX+0.5 || truncZ > 1) {
-			return true;
-			// }
+		// if (camWorldX > truncX+0.5 || truncZ > 1)
+		return true;
 		// else return false;
 	} else
 	 return false;
@@ -460,12 +467,15 @@ bool checkCollision() {
 
 //Function to compute X and Z position
 void computePos(float deltaX, float deltaZ) {
+	// store the old camera coordinates
+	cout<<"Original camera coordinates: "<<x<<","<<z<<"\n";
 	float oldx = x;
 	float oldz = z;
 
 	//Front and back movement
 	x += deltaX * lx * cameraMoveSpeed;
 	z += deltaX * lz * cameraMoveSpeed;
+	// cout<<"After front and back movement: "<<x<<","<<z<<"\n";
 
 	float rightZ = -lz;
 	float rightX = lx;
@@ -473,18 +483,21 @@ void computePos(float deltaX, float deltaZ) {
 	//Left and right movement
 	x += deltaZ * rightZ * cameraMoveSpeed;
 	z += deltaZ * rightX * cameraMoveSpeed;
+	cout<<"New camera coordinates: "<<x<<","<<z<<"\n";
 
-	//Don't allow movement is collision is true
+	//Don't allow movement if collision is true
 	if (checkCollision ()) {
 		x = oldx;
 		z = oldz;
+		cout<<"Collision detected\n";
 	}
+
+	cout<<"\n";
 }
 
 void gameProgressScreen() {
 	//Check if goal is reached
 	if (x > diamondx-1 && x < diamondx+1 && z > diamondz-1 && z < diamondz+1) {
-		cout<<x<<":"<<z<<endl;
 		gameState = GAME_WON;
 		mapMode = true;
 		glutPostRedisplay();
@@ -518,9 +531,6 @@ void gameProgressScreen() {
 	gluLookAt(x, tilt, z, // eye position
 			  x+lx, y, z+lz, // reference point
 			  0, 1, 0);  // up vector
-
-	cout<<"Eye Position: "<<x<<" "<<tilt<<" "<<z<<endl;
-	cout<<"Reference Point: "<<x+lx<<" "<<y<<" "<<z+lz<<"\n";
 
 	//Light for triangle blip
 	glDisable(GL_LIGHTING);
@@ -610,7 +620,6 @@ void gameProgressScreen() {
 
 			if (maze[i][j] == 0) {
 				//Draw a wall
-				cout<<"Wall - (i,j): "<<i<<","<<j<<"\n";
 				glPushMatrix();
 					glTranslatef(2*i, 0, j*2);
 					glEnable(GL_TEXTURE_2D);
@@ -653,7 +662,7 @@ void gameBeginScreen(){
 	glDisable(GL_LIGHTING);
 	glPushMatrix();
 		glPointSize(5.0f);
-		set_light(light_1, x+lx, z+lz);
+		set_light(light_3, x+lx, z+lz);
 	glPopMatrix();
 	glEnable(GL_LIGHTING);
 
@@ -680,7 +689,6 @@ void gameBeginScreen(){
 }
 
 void display(){
-	cout<<"gameState: "<<gameState<<"\n";
 	switch(gameState){
 		case GAME_START:
 			gameBeginScreen();
@@ -710,7 +718,6 @@ void pressKey(unsigned char key, int xx, int yy) {
 		case 'c':
 			cout<<"Continue the game\n";
 			gameState = GAME_ON;
-			glutPostRedisplay();
 			break;
 		case 'q' :
 			glutDestroyWindow(mainWindow);
@@ -749,8 +756,12 @@ void releaseSpecialKey(int key, int x, int y) {
 
 //Passive mouse movement callback
 void mouseMove(int xx, int yy) {
-	//turnAngle calculated for triangle blip rotation
+	// before modifying, save the global variables, we may need them later to revert the movement
 	float t = turnAngle;
+	float dAngle = deltaAngle, dAngleY = deltaAngleY;
+	int lx1=lx,ly1=ly,lz1=lz;
+
+	//turnAngle calculated for triangle blip rotation
 	turnAngle = -1 * (xx - xOrigin);
 	if (turnAngle>0) {
 		turnAngle = turnAngle + 10;
@@ -760,22 +771,23 @@ void mouseMove(int xx, int yy) {
 		turnAngle = 0;
 
 	//Change in x and y values due to mouse movement
-	float dAngle = deltaAngle, dAngleY = deltaAngleY;
 	deltaAngle = (xx - xOrigin) * 0.01f;
 	deltaAngleY = (yy - yOrigin) * 0.00f;
 
-	//Calculating camera direction
-	int lx1=lx,ly1=ly,lz1=lz;
+	//Calculating new camera direction
 	lx = sin(angle + deltaAngle);
 	lz = -cos(angle + deltaAngle);
 	ly =  -sin(deltaAngleY);
+
 	if(checkCollision()){
-		// there is collision, restore lx,ly,lz
+		// there is collision, restore global variables
 		lx=lx1; ly=ly1; lz=lz1;
 		turnAngle = t;
 		deltaAngle = dAngle;
 		deltaAngleY = dAngleY;
+		cout<<"Collision detected\n";
 	}
+
 	glutSetWindow(mainWindow);
 }
 
