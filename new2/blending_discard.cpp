@@ -12,13 +12,14 @@
 #include <learnopengl/model.h>
 
 #include <iostream>
+#include <cmath>
 
 #define MAZE_SIZE 13
 #define PI 3.1416f
 
-#define GAME_START 0
-#define GAME_ON 1
-#define GAME_WON 2
+// #define GAME_START 2
+#define GAME_ON 0
+#define GAME_WON 1
 
 // Game state
 int gameState = 0;
@@ -35,7 +36,7 @@ const unsigned int SCR_WIDTH = 1280;
 const unsigned int SCR_HEIGHT = 720;
 
 // camera
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(glm::vec3(1.0f, 0.0f, 1.0f));
 float lastX = (float)SCR_WIDTH / 2.0;
 float lastY = (float)SCR_HEIGHT / 2.0;
 bool firstMouse = true;
@@ -61,8 +62,8 @@ int init_maze( ) {
 	int i, j;
 	Node *n;
 
-	diamondx = 2*(1 + 2*(rand()%(width/2))); // *2 for world coordinate
-	diamondz = 2*(1 + 2*(rand()%(height/2)));
+	diamondx = 1 + 2*(rand()%(width/2)); // *2 for world coordinate
+	diamondz = 1 + 2*(rand()%(height/2));
 
 	//Allocate memory for maze
 	nodes = (Node*)calloc( width * height, sizeof( Node ) );
@@ -204,90 +205,8 @@ void mazeGen() {
 	draw();
 }
 
-struct materials_t {
-	float ambient[4];
-	float diffuse[4];
-	float specular[4];
-	float shininess;
-};
-
-struct light_t {
-	int id;
-	size_t name;
-	float ambient[4];
-	float diffuse[4];
-	float specular[4];
-};
-
-//Materials
-const materials_t materialM = {
-	{0.33f, 0.22f, 0.03f, 1.0f},
-	{0.78f, 0.57f, 0.11f, 1.0f},
-	{0.90f, 0.8f, 0.7f, 1.0f},
-	27.8f
-};
-
-//Universal light (Shade of white)
-light_t light_1 = {
-	1, GL_LIGHT1,
-	{ 0.01, 0.01, 0.20, 1 },
-	{ 0.5, 0.5, 0.6, 1 },
-	{0.3f, 0.3f, 0.3f, 1.0f}
-};
-
-// For welcome screen
-light_t light_3 = {
-	1, GL_LIGHT1,
-	{ 0.8, 0.7, 0.7, 1 },
-	{ 0.5, 0.5, 0.6, 1 },
-	{0.3f, 0.3f, 0.3f, 1.0f}
-};
-
-//Yellowish light for diamond
-light_t light_2 = {
-	2, GL_LIGHT2,
-	{ 0.4, 0.8, 0.1, 1 },
-	{ 0.7, 0.8, 0.5, 1 },
-	{0.5f, 0.5f, 0.5f, 1.0f}
-};
-
-//Properties of a given material
-void set_material(const materials_t& mat) {
-	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat.ambient);
-	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat.diffuse);
-	glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat.specular);
-	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, mat.shininess);
-}
-
-//Set a given light
-void set_light(const light_t& light, float lightx, float lightz) {
-	float lighty;
-	float intensity;
-	float dir;
-
-	//Different properties for diamond light
-	if (light.id == 1) {
-		lighty = 5;
-		intensity = 91;
-		dir = 1;
-	} else {
-		lighty = 2;
-		intensity = 50;
-		dir = -1;
-	}
-
-	float position[4] = {lightx, lighty, lightz, 1};
-	glLightfv(light.name, GL_AMBIENT, light.ambient);
-	glLightfv(light.name, GL_DIFFUSE, light.diffuse);
-	glLightfv(light.name, GL_SPECULAR, light.specular);
-	glLightfv(light.name, GL_POSITION, position);
-
-	//Spotlight adjustment calls
-	float direction[3] = {0, dir, 0};
-	glLightfv(light.name, GL_SPOT_DIRECTION, direction);
-	glLightf(light.name, GL_SPOT_CUTOFF, intensity);
-	glEnable(light.name);
-}
+bool mapView = false;
+glm::vec3 oldPos, oldFront, oldUp;
 
 
 int main()
@@ -315,7 +234,7 @@ int main()
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
-    glfwSetScrollCallback(window, scroll_callback);
+    // glfwSetScrollCallback(window, scroll_callback);
 
     // tell GLFW to capture our mouse
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -330,16 +249,14 @@ int main()
 
     // configure global opengl state
     // -----------------------------
-	glEnable(GL_COLOR_MATERIAL);
-	glEnable(GL_LIGHTING);
-	glEnable(GL_DEPTH_TEST);
-	glShadeModel(GL_SMOOTH);
-	set_material (materialM);
-    
+    glEnable(GL_DEPTH_TEST);
 
      // build and compile shaders
     // -------------------------
     Shader shader("3.1.blending.vs", "3.1.blending.fs");
+    Shader diamondShader("3.2.materials.vs", "3.2.materials.fs");
+    Shader lampShader("3.2.lamp.vs", "3.2.lamp.fs");
+   
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -453,23 +370,108 @@ int main()
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glBindVertexArray(0);
 
+    // lighting
+    glm::vec3 lightPos(diamondx, 2.0f, diamondz);
+
+
+    // set up vertex data (and buffer(s)) and configure vertex attributes
+    // ------------------------------------------------------------------
+    float diamondVertices[] = {
+        // upper four triangular faces
+        0.0, 1.0, 0.0, -1.0, 1.0, -1.0,
+        -1.0, 0.0, 0.0, -1.0, 1.0, -1.0, 
+        0.0, 0.0, -1.0, -1.0, 1.0, -1.0,
+
+        0.0, 1.0, 0.0, 1.0, 1.0, -1.0,
+        1.0, 0.0, 0.0, 1.0, 1.0, -1.0,
+        0.0, 0.0, -1.0, 1.0, 1.0, -1.0,
+
+        0.0, 1.0, 0.0, 1.0, 1.0, 1.0,
+        1.0, 0.0, 0.0, 1.0, 1.0, 1.0,
+        0.0, 0.0, 1.0, 1.0, 1.0, 1.0,
+
+        0.0, 1.0, 0.0, -1.0, 1.0, 1.0,
+        0.0, 0.0, 1.0, -1.0, 1.0, 1.0,
+        -1.0, 0.0, 0.0, -1.0, 1.0, 1.0,
+
+        0.0, -1.0, 0.0, -1.0, -1.0, -1.0,
+        -1.0, 0.0, 0.0, -1.0, -1.0, -1.0,
+        0.0, 0.0, -1.0, -1.0, -1.0, -1.0,
+
+        0.0, -1.0, 0.0, 1.0, -1.0, -1.0,
+        1.0, 0.0, 0.0, 1.0, -1.0, -1.0,
+        0.0, 0.0, -1.0, 1.0, -1.0, -1.0,
+
+        0.0, -1.0, 0.0, 1.0, -1.0, 1.0,
+        1.0, 0.0, 0.0, 1.0, -1.0, 1.0,
+        0.0, 0.0, 1.0, 1.0, -1.0, 1.0,
+
+        0.0, -1.0, 0.0, -1.0, -1.0, 1.0,
+        0.0, 0.0, 1.0, -1.0, -1.0, 1.0,
+        -1.0, 0.0, 0.0, -1.0, -1.0, 1.0
+    };
+
+    float player[] = {
+        -0.5,0.0,0.5, 0.0,1.0,0.0,
+        0.5,0.0,0.5, 0.0,1.0,0.0,
+        0.0,0.0,0.0, 0.0,1.0,0.0,
+
+        -0.5,0.0,0.0, 0.0,1.0,0.0,
+        0.5,0.0,0.0, 0.0,1.0,0.0,
+        0.0,0.0,-0.5, 0.0,1.0,0.0
+    };
+    // first, configure the cube's VAO (and VBO)
+    unsigned int VBO, diamondVAO;
+    glGenVertexArrays(1, &diamondVAO);
+    glGenBuffers(1, &VBO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(diamondVertices), diamondVertices, GL_STATIC_DRAW);
+
+    glBindVertexArray(diamondVAO);
+
+    // position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    // normal attribute
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+
+    // second, configure the light's VAO (VBO stays the same; the vertices are the same for the light object which is also a 3D cube)
+    unsigned int lightVAO;
+    glGenVertexArrays(1, &lightVAO);
+    glBindVertexArray(lightVAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    // note that we update the lamp's position attribute's stride to reflect the updated buffer data
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    unsigned int playerVBO, playerVAO;
+    glGenVertexArrays(1, &playerVAO);
+    glGenBuffers(1, &playerVBO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, playerVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(player), player, GL_STATIC_DRAW);
+
+    glBindVertexArray(playerVAO);
+
+    // position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    // normal attribute
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    
     // load textures
     // -------------
     unsigned int cubeTexture = loadTexture(FileSystem::getPath("resources/textures/wall.png").c_str());
-    unsigned int floorTexture = loadTexture(FileSystem::getPath("resources/textures/metal.png").c_str());
+    unsigned int floorTexture = loadTexture(FileSystem::getPath("resources/textures/tile.png").c_str());
     unsigned int transparentTexture = loadTexture(FileSystem::getPath("resources/textures/grass.png").c_str());
 
-    // transparent vegetation locations
-    // --------------------------------
-    // vector<glm::vec3> vegetation 
-    // {
-    //     glm::vec3( 1.5f, 0.0f, 1.5f),
-    //     glm::vec3( 3.5f, 0.0f, 9.5f),
-    //     glm::vec3( 5.0f, 0.0f, 3.7f),
-    //     glm::vec3( 7.3f, 0.0f, 5.3f),
-    //     glm::vec3 (9.5f, 0.0f, 7.6f)
-    // };
-
+    
     // shader configuration
     // --------------------
     shader.use();
@@ -501,20 +503,20 @@ int main()
         glm::mat4 model = glm::mat4(1.0f);
         shader.setMat4("projection", projection);
         shader.setMat4("view", view);
-        // cubes
-        // glBindVertexArray(cubeVAO);
-        // glActiveTexture(GL_TEXTURE0);
-        // glBindTexture(GL_TEXTURE_2D, cubeTexture);
-        // for (GLuint i = 0; i < MAZE_SIZE; i++)
-        // for (GLuint j = 0; j < MAZE_SIZE; j++)
-        // {   
-        //     if(maze[i][j]==0){
-        //         model = glm::mat4(1.0f);
-        //         model = glm::translate(model, glm::vec3(i, 0.0f, j));
-        //         shader.setMat4("model", model);
-        //         glDrawArrays(GL_TRIANGLES, 0, 36);
-        //     }
-        // }
+        //cubes
+        glBindVertexArray(cubeVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, cubeTexture);
+        for (GLuint i = 0; i < MAZE_SIZE; i++)
+        for (GLuint j = 0; j < MAZE_SIZE; j++)
+        {   
+            if(maze[i][j]==0){
+                model = glm::mat4(1.0f);
+                model = glm::translate(model, glm::vec3(i, 0.0f, j));
+                shader.setMat4("model", model);
+                glDrawArrays(GL_TRIANGLES, 0, 36);
+            }
+        }
 
         
 
@@ -532,30 +534,6 @@ int main()
                 glDrawArrays(GL_TRIANGLES, 0, 6);
             }
         }
-
-        
-        glMatrixMode(GL_MODELVIEW);
-	    glLoadIdentity();
-        
-        glDisable(GL_LIGHTING);
-		glPushMatrix();
-			set_light(light_2, diamondx, diamondz);
-		glPopMatrix();
-		glEnable(GL_LIGHTING);
-
-		//diamond
-		glPushMatrix ();
-			glColor3f(51.0/255.0,1.0, 1.0);
-			glTranslatef(diamondx, 0, diamondz);
-			glBegin(GL_TRIANGLE_STRIP);
-                glVertex3f(0, 2, 0);
-                glVertex3f(-1, 0, 1);
-                glVertex3f(1, 0, 1);
-                glVertex3f(0, 0, -1.4);
-                glVertex3f(0, 2, 0);
-                glVertex3f(-1, 0, 1);
-            glEnd();
-		glPopMatrix ();
 
         // vegetation
         glBindVertexArray(transparentVAO);
@@ -584,6 +562,74 @@ int main()
             }
         }
 
+
+        // be sure to activate shader when setting uniforms/drawing objects
+        diamondShader.use();
+        diamondShader.setVec3("light.position", lightPos);
+        diamondShader.setVec3("viewPos", camera.Position);
+
+        // light properties
+        diamondShader.setVec3("light.ambient", 1.0f, 1.0f, 1.0f); // note that all light colors are set at full intensity
+        diamondShader.setVec3("light.diffuse", 1.0f, 1.0f, 1.0f);
+        diamondShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+
+        // material properties
+        diamondShader.setVec3("material.ambient", 0.0f, 0.1f, 0.5f);
+        diamondShader.setVec3("material.diffuse", 0.0f, 0.50980392f, 0.50980392f);
+        diamondShader.setVec3("material.specular", 0.50196078f, 0.50196078f, 0.50196078f);
+        diamondShader.setFloat("material.shininess", 32.0f);
+
+    
+        diamondShader.setMat4("projection", projection);
+        diamondShader.setMat4("view", view);
+
+        // render the cube
+        if(gameState==GAME_ON){
+        glBindVertexArray(diamondVAO);
+        
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(diamondx, 0.0f, diamondz));
+        model = glm::scale(model, glm::vec3(0.3f));
+        model = glm::rotate(model,PI/8,glm::vec3(0.0f, 1.0f, 0.0f));
+        shader.setMat4("model", model);
+        glDrawArrays(GL_TRIANGLES, 0, 24);
+        }
+
+        if(mapView){
+            glBindVertexArray(playerVAO);
+            diamondShader.setVec3("material.ambient", 1.0f, 0.0f, 0.0f);
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, oldPos);
+            model = glm::scale(model, glm::vec3(0.6f));
+            float theta;
+            if(oldFront.x>0 && oldFront.z>0){
+                theta = acos(oldFront.x)+PI/2;
+            }else if(oldFront.x<0 && oldFront.z>0){
+                theta = -(acos(-oldFront.x)+PI/2);
+            }else if(oldFront.x<0 && oldFront.z<0){
+                theta = -acos(-oldFront.z);
+            }else {
+                theta = acos(-oldFront.z);
+            }
+            model = glm::rotate(model,theta,glm::vec3(0.0f, 1.0f, 0.0f));
+            shader.setMat4("model", model);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+        }
+        
+        if(!mapView){
+            // also draw the lamp object
+            lampShader.use();
+            lampShader.setMat4("projection", projection);
+            lampShader.setMat4("view", view);
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, lightPos);
+            model = glm::scale(model, glm::vec3(0.1f)); 
+            lampShader.setMat4("model", model);
+
+            glBindVertexArray(lightVAO);
+            glDrawArrays(GL_TRIANGLES, 0, 24);
+        }
+
         
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -604,19 +650,79 @@ int main()
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
+
+void showMapView(){
+    if(!mapView){
+        // render the map view
+        oldPos = camera.Position;
+        oldUp = camera.Up;
+        oldFront = camera.Front;
+        camera.Position = glm::vec3(MAZE_SIZE/2,25.0,MAZE_SIZE/2);
+        camera.Front = glm::vec3(0.0, -1.0, 0.0);
+        camera.Up = glm::vec3(1.0, 0.0, 1.0);
+    }
+    mapView = true;
+}
+void showNormalView(){
+    if(mapView){
+        // restore the maze view
+        camera.Position = oldPos;
+        camera.Up = oldUp;
+        camera.Front = oldFront;
+    }
+    mapView = false;
+}
+
+
+
+ void processKeyboard(Camera_Movement direction, float deltaTime)
+    {
+        if(gameState == GAME_WON || mapView) return;
+        float velocity = camera.MovementSpeed * deltaTime;
+        glm::vec3 newPosition = camera.Position;
+        if (direction == FORWARD)
+            // near plane needs to be taken care of 
+            newPosition += camera.Front * velocity;
+        if (direction == BACKWARD)
+            newPosition -= camera.Front * velocity;
+        if (direction == LEFT)
+            newPosition -= camera.Right * velocity;
+        if (direction == RIGHT)
+            newPosition += camera.Right * velocity;
+
+        int i,j;
+        i = round(newPosition.x);
+        j = round(newPosition.z);
+        if(i==diamondx && j==diamondz){
+            // GAME WON
+            gameState = GAME_WON;
+        }
+        if(maze[i][j]!=0){
+            camera.Position = newPosition;
+        }
+    }
+
 void processInput(GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        camera.ProcessKeyboard(FORWARD, deltaTime);
+        processKeyboard(FORWARD, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        camera.ProcessKeyboard(BACKWARD, deltaTime);
+        processKeyboard(BACKWARD, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        camera.ProcessKeyboard(LEFT, deltaTime);
+        processKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        camera.ProcessKeyboard(RIGHT, deltaTime);
+        processKeyboard(RIGHT, deltaTime);
+    
+    if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS){
+        showMapView();        
+    }
+    if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS){
+        showNormalView();
+    }
+        
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
@@ -631,7 +737,8 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 // glfw: whenever the mouse moves, this callback is called
 // -------------------------------------------------------
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
-{
+{   
+    if(mapView) return;
     if (firstMouse)
     {
         lastX = xpos;
