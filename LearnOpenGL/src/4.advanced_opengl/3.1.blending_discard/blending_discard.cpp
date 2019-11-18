@@ -256,7 +256,7 @@ int main()
     Shader shader("3.1.blending.vs", "3.1.blending.fs");
     Shader diamondShader("3.2.materials.vs", "3.2.materials.fs");
     Shader lampShader("3.2.lamp.vs", "3.2.lamp.fs");
-   
+
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -278,7 +278,7 @@ int main()
          0.5f,  0.5f, -0.5f,  0.0f, 0.0f,
         -0.5f,  0.5f, -0.5f,  1.0f, 0.0f,
         -0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-        
+
         // frontside
         -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
         -0.5f,  0.5f, -0.5f,  1.0f, 0.0f,
@@ -286,7 +286,7 @@ int main()
         -0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
         -0.5f, -0.5f,  0.5f,  0.0f, 1.0f,
         -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-         
+
         // backside
          0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
          0.5f,  0.5f, -0.5f,  1.0f, 0.0f,
@@ -315,7 +315,7 @@ int main()
 
     float planeVertices[] = {
         // floor
-        // positions          // texture Coords 
+        // positions          // texture Coords
          0.5f, -0.5f,  0.5f,  2.0f, 0.0f,
         -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
         -0.5f, -0.5f, -0.5f,  0.0f, 2.0f,
@@ -379,7 +379,7 @@ int main()
     float diamondVertices[] = {
         // upper four triangular faces
         0.0, 1.0, 0.0, -1.0, 1.0, -1.0,
-        -1.0, 0.0, 0.0, -1.0, 1.0, -1.0, 
+        -1.0, 0.0, 0.0, -1.0, 1.0, -1.0,
         0.0, 0.0, -1.0, -1.0, 1.0, -1.0,
 
         0.0, 1.0, 0.0, 1.0, 1.0, -1.0,
@@ -464,14 +464,14 @@ int main()
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    
+
     // load textures
     // -------------
     unsigned int cubeTexture = loadTexture(FileSystem::getPath("resources/textures/wall.png").c_str());
     unsigned int floorTexture = loadTexture(FileSystem::getPath("resources/textures/tile.png").c_str());
     unsigned int transparentTexture = loadTexture(FileSystem::getPath("resources/textures/grass.png").c_str());
 
-    
+
     // shader configuration
     // --------------------
     shader.use();
@@ -509,7 +509,7 @@ int main()
         glBindTexture(GL_TEXTURE_2D, cubeTexture);
         for (GLuint i = 0; i < MAZE_SIZE; i++)
         for (GLuint j = 0; j < MAZE_SIZE; j++)
-        {   
+        {
             if(maze[i][j]==0){
                 model = glm::mat4(1.0f);
                 model = glm::translate(model, glm::vec3(i, 0.0f, j));
@@ -518,15 +518,15 @@ int main()
             }
         }
 
-        
+
 
         // floor
         glBindVertexArray(planeVAO);
         glBindTexture(GL_TEXTURE_2D, floorTexture);
-       
+
         for (GLuint i = 0; i < MAZE_SIZE; i++)
         for (GLuint j = 0; j < MAZE_SIZE; j++)
-        {   
+        {
             if(maze[i][j]!=0){
                 model = glm::mat4(1.0f);
                 model = glm::translate(model, glm::vec3(i, 0.0f, j));
@@ -538,10 +538,10 @@ int main()
         // vegetation
         glBindVertexArray(transparentVAO);
         glBindTexture(GL_TEXTURE_2D, transparentTexture);
-       
+
         for (GLuint i = 0; i < MAZE_SIZE; i++)
         for (GLuint j = 0; j < MAZE_SIZE; j++)
-        {   
+        {
             if(maze[i][j]==2){
                 model = glm::mat4(1.0f);
                 model = glm::translate(model, glm::vec3(i, 0.0f, j));
@@ -553,7 +553,7 @@ int main()
                 model = glm::rotate(model,PI/4,glm::vec3(0.0f, 1.0f, 0.0f));
                 shader.setMat4("model", model);
                 glDrawArrays(GL_TRIANGLES, 0, 6);
-                
+
                 model = glm::mat4(1.0f);
                 model = glm::translate(model, glm::vec3(i, 0.0f, j));
                 model = glm::rotate(model,-PI/4,glm::vec3(0.0f, 1.0f, 0.0f));
@@ -579,14 +579,14 @@ int main()
         diamondShader.setVec3("material.specular", 0.50196078f, 0.50196078f, 0.50196078f);
         diamondShader.setFloat("material.shininess", 32.0f);
 
-    
+
         diamondShader.setMat4("projection", projection);
         diamondShader.setMat4("view", view);
 
         // render the cube
         if(gameState==GAME_ON){
         glBindVertexArray(diamondVAO);
-        
+
         model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(diamondx, 0.0f, diamondz));
         model = glm::scale(model, glm::vec3(0.3f));
@@ -615,7 +615,7 @@ int main()
             shader.setMat4("model", model);
             glDrawArrays(GL_TRIANGLES, 0, 6);
         }
-        
+
         if(!mapView){
             // also draw the lamp object
             lampShader.use();
@@ -623,14 +623,14 @@ int main()
             lampShader.setMat4("view", view);
             model = glm::mat4(1.0f);
             model = glm::translate(model, lightPos);
-            model = glm::scale(model, glm::vec3(0.1f)); 
+            model = glm::scale(model, glm::vec3(0.1f));
             lampShader.setMat4("model", model);
 
             glBindVertexArray(lightVAO);
             glDrawArrays(GL_TRIANGLES, 0, 24);
         }
 
-        
+
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
@@ -680,15 +680,22 @@ void showNormalView(){
         if(gameState == GAME_WON || mapView) return;
         float velocity = camera.MovementSpeed * deltaTime;
         glm::vec3 newPosition = camera.Position;
-        if (direction == FORWARD)
-            // near plane needs to be taken care of 
+        if (direction == FORWARD){
+            // near plane needs to be taken care of
             newPosition += camera.Front * velocity;
-        if (direction == BACKWARD)
+						newPosition += camera.Front * 0.25f;
+        }
+				if (direction == BACKWARD){
             newPosition -= camera.Front * velocity;
-        if (direction == LEFT)
+        }
+				if (direction == LEFT){
             newPosition -= camera.Right * velocity;
-        if (direction == RIGHT)
+						newPosition -= camera.Right * 0.25f;
+        }
+				if (direction == RIGHT){
             newPosition += camera.Right * velocity;
+						newPosition += camera.Right * 0.25f;
+				}
 
         int i,j;
         i = round(newPosition.x);
@@ -715,21 +722,21 @@ void processInput(GLFWwindow *window)
         processKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         processKeyboard(RIGHT, deltaTime);
-    
+
     if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS){
-        showMapView();        
+        showMapView();
     }
     if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS){
         showNormalView();
     }
-        
+
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 // ---------------------------------------------------------------------------------------------
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-    // make sure the viewport matches the new window dimensions; note that width and 
+    // make sure the viewport matches the new window dimensions; note that width and
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }
@@ -737,7 +744,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 // glfw: whenever the mouse moves, this callback is called
 // -------------------------------------------------------
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
-{   
+{
     if(mapView) return;
     if (firstMouse)
     {
@@ -785,7 +792,7 @@ unsigned int loadTexture(char const * path)
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT); // for this tutorial: use GL_CLAMP_TO_EDGE to prevent semi-transparent borders. Due to interpolation it takes texels from next repeat 
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT); // for this tutorial: use GL_CLAMP_TO_EDGE to prevent semi-transparent borders. Due to interpolation it takes texels from next repeat
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
